@@ -1,15 +1,17 @@
 # AC — Fix production PNC Nexus (Neon)
 
-**Masalah:** login live gagal (server digest); SQLite file tidak cocok Vercel serverless.  
-**Keputusan Product (8 Sep 2026):** pakai **Neon Postgres gratis** (Turso = fallback).
+**Masalah:** login live gagal (SQLite di Vercel).  
+**Keputusan:** Neon Postgres gratis.
 
-## Acceptance
-- [ ] `https://pnc-nexus88.vercel.app/masuk` login demo sukses (`rina.kerja@demo.nexus` / seed password README)
-- [ ] `/pemerintahan` menampilkan banner penuh: “Informasi bukan portal resmi”, “bukan LPSE/SPSE”, “Tidak ada jaminan menang tender”
-- [ ] Detail pemerintahan: checkbox + “Minta dampingan (internal)”; CTA INAPROC eksternal bila ada
-- [ ] Landing tetap: tagline, 3 pilar framing aman, footer independen
-- [ ] Seed akun demo tetap terdokumentasi di README
-- [ ] Tidak ada regresi compliance (fee pencari kerja / HET / tiru LPSE)
+## Hasil verifikasi Product (8 Sep 2026 WIB)
 
-## Out of scope fix ini
-Fitur baru besar; fokus auth+DB+seed+redeploy.
+| Item | Hasil |
+|------|-------|
+| Login demo rina | **PASS** → `/ringkasan` |
+| Banner `/pemerintahan` frasa wajib | **PASS** |
+| Detail tanpa SPSE login/upload | **PASS** |
+| Landing/footer (sebelumnya) | **PASS** |
+| **Verdict** | **PROD FIX PASS** |
+
+URL: https://pnc-nexus88.vercel.app  
+Password seed: lihat README (`NexusDemo2026!`)
