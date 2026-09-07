@@ -89,8 +89,23 @@ model MitraProfile {
   jalurPemerintahan Boolean @default(false)
   status      MitraStatus @default(menunggu_verifikasi)
   onboardingDone Boolean  @default(false)
+  catatanStatus String?
+  cekProfilLengkap Boolean @default(false)
+  cekKontakValid Boolean @default(false)
+  cekJalurSesuai Boolean @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model OperatorNotice {
+  id        String   @id @default(cuid())
+  kind      String
+  judul     String
+  detail    String
+  linkPath  String?
+  mitraWa   String?
+  createdAt DateTime @default(now())
+  readAt    DateTime?
 }
 
 model PeluangKerja {

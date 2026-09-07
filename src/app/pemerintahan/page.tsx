@@ -2,13 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { PageHeader, StatusBadge, EmptyState } from "@/components/ui";
+import { PageHeader, StatusBadge, EmptyState, FormFlash } from "@/components/ui";
 import { GovDisclaimerBanner } from "@/components/disclaimers";
 
-export default async function PemerintahanPage() {
+export default async function PemerintahanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; ok?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   if (user.role === "mitra" && !user.onboardingDone) redirect("/onboarding");
+  const sp = await searchParams;
 
   const list = await prisma.peluangPemerintahan.findMany({
     where: { status: "aktif" },
@@ -22,6 +27,7 @@ export default async function PemerintahanPage() {
         subtitle="Informasi & dampingan internal jaringan — bukan portal resmi."
       />
       <GovDisclaimerBanner />
+      <FormFlash error={sp.error} ok={sp.ok} />
       {list.length === 0 ? (
         <EmptyState
           title="Belum ada info peluang. Pantau halaman ini atau lengkapi profil agar mudah dihubungi operator."

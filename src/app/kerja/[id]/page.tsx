@@ -1,8 +1,8 @@
 import { redirect, notFound } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { applyKerjaAction } from "@/lib/actions";
-import { PageHeader, StatusBadge, Alert, FormFlash } from "@/components/ui";
+import { applyKerjaAction, updateAplikasiStatusAction } from "@/lib/actions";
+import { PageHeader, StatusBadge, Alert, FormFlash, EmptyState } from "@/components/ui";
 import { KerjaDisclaimer } from "@/components/disclaimers";
 import { SubmitButton } from "@/components/form-button";
 
@@ -74,6 +74,7 @@ export default async function KerjaDetailPage({
             name="catatan"
             placeholder="Catatan singkat untuk operator / pemberi kerja"
             required
+            minLength={3}
           />
           <SubmitButton>Kirim minat ke peluang ini</SubmitButton>
         </form>
@@ -81,11 +82,16 @@ export default async function KerjaDetailPage({
 
       {isOps ? (
         <div className="card">
-          <h2 className="font-semibold">Inbox aplikasi</h2>
+          <h2 className="font-semibold">Inbox aplikasi · alur status</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            diajukan → ditinjau → diterima / ditolak
+          </p>
           {peluang.aplikasi.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">Belum ada aplikasi.</p>
+            <div className="mt-3">
+              <EmptyState title="Belum ada aplikasi." hint="Minat mitra terverifikasi muncul di sini." />
+            </div>
           ) : (
-            <ul className="mt-3 space-y-2 text-sm">
+            <ul className="mt-3 space-y-3 text-sm">
               {peluang.aplikasi.map((a) => (
                 <li key={a.id} className="rounded-lg border border-slate-100 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -95,6 +101,17 @@ export default async function KerjaDetailPage({
                     <StatusBadge status={a.status} />
                   </div>
                   <p className="mt-1 text-slate-600">{a.catatan}</p>
+                  <form action={updateAplikasiStatusAction} className="mt-2 flex flex-wrap items-center gap-2">
+                    <input type="hidden" name="aplikasiId" value={a.id} />
+                    <input type="hidden" name="peluangId" value={peluang.id} />
+                    <select className="input !w-auto" name="status" defaultValue={a.status}>
+                      <option value="diajukan">diajukan</option>
+                      <option value="ditinjau">ditinjau</option>
+                      <option value="diterima">diterima</option>
+                      <option value="ditolak">ditolak</option>
+                    </select>
+                    <SubmitButton className="btn-secondary">Set status</SubmitButton>
+                  </form>
                 </li>
               ))}
             </ul>

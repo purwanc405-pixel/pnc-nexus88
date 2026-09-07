@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 const DEMO = "NexusDemo2026!";
 
 async function main() {
+  await prisma.operatorNotice.deleteMany();
   await prisma.dampingan.deleteMany();
   await prisma.minatKomoditi.deleteMany();
   await prisma.aplikasi.deleteMany();

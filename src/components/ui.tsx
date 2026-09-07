@@ -20,11 +20,20 @@ export function PageHeader({
   );
 }
 
-export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+export function EmptyState({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="card text-center text-slate-600">
       <p className="font-medium text-slate-800">{title}</p>
       {hint ? <p className="mt-1 text-sm">{hint}</p> : null}
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }

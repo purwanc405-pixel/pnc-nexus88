@@ -5,11 +5,18 @@ import { createListingAction, minatKomoditiAction } from "@/lib/actions";
 import { PageHeader, StatusBadge, EmptyState, FormFlash } from "@/components/ui";
 import { KomoditiDisclaimer } from "@/components/disclaimers";
 import { SubmitButton } from "@/components/form-button";
+import type { Prisma } from "@prisma/client";
 
 export default async function KomoditiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    ok?: string;
+    q?: string;
+    status?: string;
+    kategori?: string;
+  }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
@@ -17,15 +24,32 @@ export default async function KomoditiPage({
   const sp = await searchParams;
 
   const isOps = user.role === "admin" || user.role === "operator";
+  const and: Prisma.ListingKomoditiWhereInput[] = [];
+  if (!isOps) {
+    and.push({ OR: [{ status: "aktif" }, { pemilikId: user.id }] });
+  }
+  if (sp.status === "aktif" || sp.status === "draft" || sp.status === "ditutup") {
+    and.push({ status: sp.status });
+  }
+  if (sp.kategori?.trim()) and.push({ kategori: { contains: sp.kategori.trim() } });
+  if (sp.q?.trim()) {
+    const q = sp.q.trim();
+    and.push({
+      OR: [
+        { nama: { contains: q } },
+        { kategori: { contains: q } },
+        { asal: { contains: q } },
+        { tujuan: { contains: q } },
+        { catatan: { contains: q } },
+      ],
+    });
+  }
+  const where: Prisma.ListingKomoditiWhereInput | undefined = and.length
+    ? { AND: and }
+    : undefined;
+
   const listings = await prisma.listingKomoditi.findMany({
-    where: isOps
-      ? undefined
-      : {
-          OR: [
-            { status: "aktif" },
-            { pemilikId: user.id },
-          ],
-        },
+    where,
     include: {
       pemilik: { include: { mitraProfile: true } },
       minat: { include: { user: true } },
@@ -44,6 +68,32 @@ export default async function KomoditiPage({
       />
       <KomoditiDisclaimer />
       <FormFlash error={sp.error} ok={sp.ok} />
+
+      <form className="card grid gap-3 sm:grid-cols-4" method="get">
+        <input
+          className="input sm:col-span-2"
+          name="q"
+          placeholder="Cari nama / kategori / asal / tujuan"
+          defaultValue={sp.q || ""}
+        />
+        <select className="input" name="status" defaultValue={sp.status || ""}>
+          <option value="">Semua status</option>
+          <option value="aktif">aktif</option>
+          <option value="draft">draft</option>
+          <option value="ditutup">ditutup</option>
+        </select>
+        <div className="flex gap-2">
+          <input
+            className="input"
+            name="kategori"
+            placeholder="Kategori"
+            defaultValue={sp.kategori || ""}
+          />
+          <button className="btn-secondary shrink-0" type="submit">
+            Filter
+          </button>
+        </div>
+      </form>
 
       {canCreate ? (
         <details className="card">
@@ -97,8 +147,8 @@ export default async function KomoditiPage({
 
       {listings.length === 0 ? (
         <EmptyState
-          title="Belum ada listing. Buat listing pertama Anda."
-          hint="Listing aktif akan muncul untuk mitra lain."
+          title="Belum ada listing yang cocok."
+          hint="Ubah filter, atau buat listing pertama Anda setelah terverifikasi."
         />
       ) : (
         <div className="space-y-3">

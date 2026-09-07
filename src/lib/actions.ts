@@ -10,6 +10,7 @@ import {
   hashPassword,
   verifyPassword,
 } from "./auth";
+import { notifyOperator } from "./notify";
 
 /** Soft validation failure: redirect with searchParams error (no thrown Error UX). */
 function failTo(path: string, msg: string): never {
@@ -182,11 +183,76 @@ export async function setMitraStatusAction(formData: FormData) {
     "ditangguhkan",
   ];
   if (!allowed.includes(status)) return failTo("/mitra", "Status tidak valid.");
+  const catatanStatus = String(formData.get("catatanStatus") || "").trim() || null;
+  const cekProfilLengkap = formData.get("cekProfilLengkap") === "on";
+  const cekKontakValid = formData.get("cekKontakValid") === "on";
+  const cekJalurSesuai = formData.get("cekJalurSesuai") === "on";
+  const back = String(formData.get("back") || "/admin");
+
+  if (status === "terverifikasi") {
+    if (!cekProfilLengkap || !cekKontakValid || !cekJalurSesuai) {
+      return failTo(
+        back,
+        "Centang checklist verifikasi (profil, kontak, jalur) sebelum approve."
+      );
+    }
+  }
+  if (status === "ditolak" && !catatanStatus) {
+    return failTo(back, "Isi alasan penolakan (catatan reject) sebelum menolak.");
+  }
+
   await prisma.mitraProfile.update({
     where: { id: profileId },
-    data: { status },
+    data: {
+      status,
+      catatanStatus,
+      cekProfilLengkap,
+      cekKontakValid,
+      cekJalurSesuai,
+    },
   });
   revalidatePath("/mitra");
+  revalidatePath("/admin");
+  revalidatePath("/ringkasan");
+  redirect(back + "?ok=" + encodeURIComponent("Status mitra diperbarui."));
+}
+
+export async function updateAplikasiStatusAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || (user.role !== "admin" && user.role !== "operator"))
+    return failTo("/ringkasan", "Tidak diizinkan.");
+  const aplikasiId = String(formData.get("aplikasiId") || "");
+  const peluangId = String(formData.get("peluangId") || "");
+  const back = peluangId ? `/kerja/${peluangId}` : "/kerja";
+  const status = String(formData.get("status") || "") as
+    | "diajukan"
+    | "ditinjau"
+    | "diterima"
+    | "ditolak";
+  const allowed = ["diajukan", "ditinjau", "diterima", "ditolak"];
+  if (!aplikasiId || !allowed.includes(status))
+    return failTo(back, "Status aplikasi tidak valid.");
+  await prisma.aplikasi.update({
+    where: { id: aplikasiId },
+    data: { status },
+  });
+  revalidatePath(back);
+  revalidatePath("/kerja");
+  revalidatePath("/admin");
+  redirect(back + "?ok=" + encodeURIComponent("Status aplikasi diperbarui."));
+}
+
+export async function markNoticeReadAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || (user.role !== "admin" && user.role !== "operator"))
+    return failTo("/ringkasan", "Tidak diizinkan.");
+  const id = String(formData.get("id") || "");
+  if (!id) return failTo("/ringkasan", "ID tidak valid.");
+  await prisma.operatorNotice.update({
+    where: { id },
+    data: { readAt: new Date() },
+  });
+  revalidatePath("/ringkasan");
   revalidatePath("/admin");
   return ok();
 }
@@ -208,15 +274,31 @@ export async function applyKerjaAction(formData: FormData) {
   const peluang = await prisma.peluangKerja.findUnique({ where: { id: peluangId } });
   if (!peluang || peluang.status !== "buka")
     return failTo(back, "Peluang tidak tersedia.");
+  let aplikasiId = "";
   try {
-    await prisma.aplikasi.create({
+    const created = await prisma.aplikasi.create({
       data: { peluangId, userId: user.id, catatan, status: "diajukan" },
     });
+    aplikasiId = created.id;
   } catch {
     return failTo(back, "Anda sudah mengirim minat ke peluang ini.");
   }
+  await notifyOperator({
+    kind: "apply",
+    judul: `Apply kerja: ${user.name} → ${peluang.judul}`,
+    detail: catatan,
+    linkPath: `/kerja/${peluangId}`,
+    mitraWa: (
+      await prisma.mitraProfile.findUnique({ where: { userId: user.id } })
+    )?.wa,
+    refType: "aplikasi",
+    refId: aplikasiId,
+    actorUserId: user.id,
+  });
   revalidatePath(`/kerja/${peluangId}`);
   revalidatePath("/kerja");
+  revalidatePath("/ringkasan");
+  revalidatePath("/pipeline");
   redirect(back + "?ok=" + encodeURIComponent("Minat terkirim."));
 }
 
@@ -266,14 +348,29 @@ export async function minatKomoditiAction(formData: FormData) {
   const listing = await prisma.listingKomoditi.findUnique({ where: { id: listingId } });
   if (!listing || listing.status !== "aktif")
     return failTo("/komoditi", "Listing tidak aktif.");
+  let minatId = "";
   try {
-    await prisma.minatKomoditi.create({
+    const created = await prisma.minatKomoditi.create({
       data: { listingId, userId: user.id, catatan },
     });
+    minatId = created.id;
   } catch {
     return failTo("/komoditi", "Anda sudah menandai tertarik.");
   }
+  const mitra = await prisma.mitraProfile.findUnique({ where: { userId: user.id } });
+  await notifyOperator({
+    kind: "minat",
+    judul: `Minat komoditi: ${user.name} → ${listing.nama}`,
+    detail: catatan || "(tanpa catatan)",
+    linkPath: "/komoditi",
+    mitraWa: mitra?.wa,
+    refType: "minat",
+    refId: minatId,
+    actorUserId: user.id,
+  });
   revalidatePath("/komoditi");
+  revalidatePath("/ringkasan");
+  revalidatePath("/pipeline");
   redirect("/komoditi?ok=" + encodeURIComponent("Minat tercatat."));
 }
 
@@ -291,8 +388,9 @@ export async function dampinganAction(formData: FormData) {
       "Centang pernyataan pemahaman sebelum meminta dampingan."
     );
   if (!catatan) return failTo(back, "Isi catatan permintaan.");
+  let dampId = "";
   try {
-    await prisma.dampingan.create({
+    const created = await prisma.dampingan.create({
       data: {
         peluangId,
         userId: user.id,
@@ -300,10 +398,27 @@ export async function dampinganAction(formData: FormData) {
         disclaimerCheckedAt: new Date(),
       },
     });
+    dampId = created.id;
   } catch {
     return failTo(back, "Anda sudah meminta dampingan untuk item ini.");
   }
+  const peluangGov = await prisma.peluangPemerintahan.findUnique({
+    where: { id: peluangId },
+  });
+  const mitra = await prisma.mitraProfile.findUnique({ where: { userId: user.id } });
+  await notifyOperator({
+    kind: "dampingan",
+    judul: `Dampingan: ${user.name} → ${peluangGov?.judul || peluangId}`,
+    detail: catatan,
+    linkPath: `/pemerintahan/${peluangId}`,
+    mitraWa: mitra?.wa,
+    refType: "dampingan",
+    refId: dampId,
+    actorUserId: user.id,
+  });
   revalidatePath(`/pemerintahan/${peluangId}`);
+  revalidatePath("/ringkasan");
+  revalidatePath("/pipeline");
   redirect(back + "?ok=" + encodeURIComponent("Permintaan dampingan terkirim."));
 }
 
