@@ -77,3 +77,9 @@ Paket ini adalah **dokumentasi produk saja** (bukan kode aplikasi). Semua file d
 - `REVIEW_CHECKLIST.md` — audit produk post-commit
 - `DEMO_WALKTHROUGH.md` — script demo 10 menit
 - `LAUNCH_READINESS.md` — go/no-go launch
+
+## Launch & growth
+- `OPERATOR_SOP.md` — rutinitas operator + SLA
+- `MARKETING_SAFE_COPY.md` — klaim aman / terlarang
+- `POST_MVP_ROADMAP.md` — prioritas setelah MVP ACCEPT
+- `AUDIT_2026-09-08.md` — verdict produk terkini
