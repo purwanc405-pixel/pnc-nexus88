@@ -1,6 +1,6 @@
 # Product Brief MVP — PNC Nexus
 
-**Status:** Paket produk maksimal siap; build menunggu GitHub URL (Origin Free blocked) · diperbarui 8 Sep 2026  
+**Status:** Paket produk maksimal di GitHub `purwanc405-pixel/pnc-nexus88` (docs/). Build app via **worker gratis** (bukan Cloud Agent Pro) · diperbarui 8 Sep 2026  
 **Owner:** PNC_Product  
 **Tanggal:** 6 September 2026 (WIB)  
 **Nama final:** PNC Nexus (terkunci 6 Sep 2026)  
