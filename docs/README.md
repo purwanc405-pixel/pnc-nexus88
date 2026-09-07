@@ -69,3 +69,11 @@ Paket ini adalah **dokumentasi produk saja** (bukan kode aplikasi). Semua file d
 ---
 
 *Diperbarui: 8 September 2026 (WIB)*
+
+- `REVIEW_CHECKLIST.md` — checklist review produk saat ada commit/PR (jalur worker gratis)
+
+## Build tanpa Pro
+- `WORKER_BUILD_PRIORITY.md` — urutan build worker
+- `REVIEW_CHECKLIST.md` — audit produk post-commit
+- `DEMO_WALKTHROUGH.md` — script demo 10 menit
+- `LAUNCH_READINESS.md` — go/no-go launch
