@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  mitra
+  operator
+  admin
+}
+
+enum MitraStatus {
+  menunggu_verifikasi
+  terverifikasi
+  ditolak
+  ditangguhkan
+}
+
+enum TipeMitra {
+  individu
+  badan
+}
+
+enum PeluangStatus {
+  buka
+  tutup
+}
+
+enum AplikasiStatus {
+  diajukan
+  ditinjau
+  diterima
+  ditolak
+}
+
+enum ListingStatus {
+  draft
+  aktif
+  ditutup
+}
+
+enum GovStatus {
+  aktif
+  arsip
+}
+
+enum PipelineKolom {
+  baru
+  ditinjau
+  dihubungi
+  tersalurkan
+  tidak_cocok
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(mitra)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mitraProfile MitraProfile?
+  aplikasi     Aplikasi[]
+  minatKomoditi MinatKomoditi[]
+  dampingan    Dampingan[]
+  listings     ListingKomoditi[]
+  pipelineActs PipelineCard[] @relation("PipelineActor")
+}
+
+model MitraProfile {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipe        TipeMitra
+  nama        String
+  kota        String
+  provinsi    String
+  wa          String
+  deskripsi   String
+  dokumenPath String?
+  jalurKerja  Boolean     @default(false)
+  jalurKomoditi Boolean   @default(false)
+  jalurPemerintahan Boolean @default(false)
+  status      MitraStatus @default(menunggu_verifikasi)
+  onboardingDone Boolean  @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model PeluangKerja {
+  id          String        @id @default(cuid())
+  judul       String
+  deskripsi   String
+  lokasi      String
+  jenis       String
+  deadline    DateTime?
+  status      PeluangStatus @default(buka)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  aplikasi    Aplikasi[]
+}
+
+model Aplikasi {
+  id         String         @id @default(cuid())
+  peluangId  String
+  peluang    PeluangKerja   @relation(fields: [peluangId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catatan    String
+  status     AplikasiStatus @default(diajukan)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([peluangId, userId])
+}
+
+model ListingKomoditi {
+  id            String        @id @default(cuid())
+  pemilikId     String
+  pemilik       User          @relation(fields: [pemilikId], references: [id], onDelete: Cascade)
+  nama          String
+  kategori      String
+  volume        String
+  hargaIndikatif String?
+  asal          String
+  tujuan        String
+  catatan       String?
+  status        ListingStatus @default(draft)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  minat         MinatKomoditi[]
+}
+
+model MinatKomoditi {
+  id        String          @id @default(cuid())
+  listingId String
+  listing   ListingKomoditi @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catatan   String?
+  createdAt DateTime        @default(now())
+
+  @@unique([listingId, userId])
+}
+
+model PeluangPemerintahan {
+  id          String    @id @default(cuid())
+  judul       String
+  ringkasan   String
+  sumberInfo  String
+  tanggal     DateTime
+  status      GovStatus @default(aktif)
+  inaprocUrl  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  dampingan   Dampingan[]
+}
+
+model Dampingan {
+  id                 String              @id @default(cuid())
+  peluangId          String
+  peluang            PeluangPemerintahan @relation(fields: [peluangId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catatan            String
+  disclaimerCheckedAt DateTime
+  createdAt          DateTime            @default(now())
+
+  @@unique([peluangId, userId])
+}
+
+model PipelineCard {
+  id          String        @id @default(cuid())
+  judul       String
+  kolom       PipelineKolom @default(baru)
+  refType     String?
+  refId       String?
+  catatan     String?
+  updatedById String?
+  updatedBy   User?         @relation("PipelineActor", fields: [updatedById], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
