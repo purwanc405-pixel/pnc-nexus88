@@ -2,13 +2,13 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { setMitraStatusAction } from "@/lib/actions";
-import { PageHeader, StatusBadge, EmptyState } from "@/components/ui";
+import { PageHeader, StatusBadge, EmptyState, FormFlash } from "@/components/ui";
 import { SubmitButton } from "@/components/form-button";
 
 export default async function MitraDirPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; kota?: string; jalur?: string }>;
+  searchParams: Promise<{ status?: string; kota?: string; jalur?: string; error?: string; ok?: string }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
@@ -31,6 +31,7 @@ export default async function MitraDirPage({
   return (
     <div className="space-y-4">
       <PageHeader title="Direktori mitra" subtitle="Filter status, jalur, dan kota." />
+      <FormFlash error={sp.error} ok={sp.ok} />
       <form className="card grid gap-3 sm:grid-cols-4" method="get">
         <select className="input" name="status" defaultValue={sp.status || ""}>
           <option value="">Semua status</option>

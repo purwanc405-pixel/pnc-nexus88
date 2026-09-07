@@ -27,8 +27,17 @@ export async function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
-export async function createSession(userId: string) {
-  const token = await new SignJWT({ sub: userId })
+export async function createSession(userId: string, role?: Role) {
+  let sessionRole = role;
+  if (!sessionRole) {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!u) throw new Error("User tidak ditemukan.");
+    sessionRole = u.role;
+  }
+  const token = await new SignJWT({ sub: userId, role: sessionRole })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")

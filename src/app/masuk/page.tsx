@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loginAction } from "@/lib/actions";
 import { SubmitButton } from "@/components/form-button";
-import { PageHeader } from "@/components/ui";
+import { FormFlash, PageHeader } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -26,7 +26,7 @@ export default async function MasukPage({
           <label className="label" htmlFor="password">Password</label>
           <input className="input" id="password" name="password" type="password" required />
         </div>
-        {sp.error ? <p className="text-sm text-rose-600">{sp.error}</p> : null}
+        <FormFlash error={sp.error} />
         <SubmitButton>Masuk</SubmitButton>
         <p className="text-sm text-slate-600">
           Belum punya akun?{" "}

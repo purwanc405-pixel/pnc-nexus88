@@ -70,3 +70,28 @@ export function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+
+export function FormFlash({
+  error,
+  ok,
+}: {
+  error?: string;
+  ok?: string;
+}) {
+  if (error) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+        {error}
+      </div>
+    );
+  }
+  if (ok) {
+    return (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+        {ok}
+      </div>
+    );
+  }
+  return null;
+}

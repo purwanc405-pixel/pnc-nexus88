@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { registerAction } from "@/lib/actions";
 import { SubmitButton } from "@/components/form-button";
-import { PageHeader } from "@/components/ui";
+import { FormFlash, PageHeader } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default async function DaftarPage() {
+export default async function DaftarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await getSessionUser();
   if (user) redirect("/ringkasan");
+  const sp = await searchParams;
 
   return (
     <div className="mx-auto max-w-md">
@@ -16,6 +21,7 @@ export default async function DaftarPage() {
         subtitle="Buat akun email + password, lalu lengkapi onboarding."
       />
       <form action={registerAction} className="card space-y-4">
+        <FormFlash error={sp.error} />
         <div>
           <label className="label" htmlFor="name">Nama</label>
           <input className="input" id="name" name="name" required />

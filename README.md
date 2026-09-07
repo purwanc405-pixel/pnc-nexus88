@@ -67,4 +67,4 @@ Password semua akun seed: **`NexusDemo2026!`**
 
 - Apply kerja hanya mitra `terverifikasi`.
 - Mitra `ditolak` / `ditangguhkan` tidak bisa buat listing baru.
-- Role guard: mitra tidak mengakses `/admin` / `/pipeline` (redirect); middleware mewajibkan login untuk area app.
+- Role guard: middleware memblokir mitra dari `/admin`, `/pipeline`, dan `/mitra` (direktori); `/admin` hanya admin; operator boleh `/pipeline` + `/mitra`. Form error memakai redirect + searchParams (bukan throw).

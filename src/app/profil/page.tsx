@@ -2,14 +2,19 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateProfilAction } from "@/lib/actions";
-import { PageHeader, StatusBadge } from "@/components/ui";
+import { FormFlash, PageHeader, StatusBadge } from "@/components/ui";
 import { SubmitButton } from "@/components/form-button";
 
-export default async function ProfilPage() {
+export default async function ProfilPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; ok?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   if (user.role !== "mitra") redirect("/ringkasan");
   if (!user.onboardingDone) redirect("/onboarding");
+  const sp = await searchParams;
 
   const profile = await prisma.mitraProfile.findUnique({ where: { userId: user.id } });
   if (!profile) redirect("/onboarding");
@@ -21,6 +26,7 @@ export default async function ProfilPage() {
         subtitle="Edit data Anda. Status verifikasi dikelola admin."
         actions={<StatusBadge status={profile.status} />}
       />
+      <FormFlash error={sp.error} ok={sp.ok} />
       <div className="card text-sm text-slate-600">
         Jalur minat:{" "}
         {[

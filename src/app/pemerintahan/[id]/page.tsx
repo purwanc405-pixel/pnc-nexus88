@@ -3,18 +3,21 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { dampinganAction } from "@/lib/actions";
 import { GOV_DISCLAIMER_CHECKBOX } from "@/lib/constants";
-import { PageHeader, StatusBadge, Alert } from "@/components/ui";
+import { PageHeader, StatusBadge, Alert, FormFlash } from "@/components/ui";
 import { GovDisclaimerBanner } from "@/components/disclaimers";
 import { SubmitButton } from "@/components/form-button";
 
 export default async function GovDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   const { id } = await params;
+  const sp = await searchParams;
   const item = await prisma.peluangPemerintahan.findUnique({
     where: { id },
     include: { dampingan: { where: { userId: user.id } } },
@@ -30,6 +33,7 @@ export default async function GovDetailPage({
         actions={<StatusBadge status={item.status} />}
       />
       <GovDisclaimerBanner />
+      <FormFlash error={sp.error} ok={sp.ok} />
       <div className="card space-y-3 text-sm text-slate-700">
         <p className="whitespace-pre-wrap leading-relaxed">{item.ringkasan}</p>
         <p>

@@ -2,14 +2,19 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createListingAction, minatKomoditiAction } from "@/lib/actions";
-import { PageHeader, StatusBadge, EmptyState } from "@/components/ui";
+import { PageHeader, StatusBadge, EmptyState, FormFlash } from "@/components/ui";
 import { KomoditiDisclaimer } from "@/components/disclaimers";
 import { SubmitButton } from "@/components/form-button";
 
-export default async function KomoditiPage() {
+export default async function KomoditiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; ok?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   if (user.role === "mitra" && !user.onboardingDone) redirect("/onboarding");
+  const sp = await searchParams;
 
   const isOps = user.role === "admin" || user.role === "operator";
   const listings = await prisma.listingKomoditi.findMany({
@@ -38,6 +43,7 @@ export default async function KomoditiPage() {
         subtitle="Listing penawaran mitra. Harga indikatif · penawaran mitra."
       />
       <KomoditiDisclaimer />
+      <FormFlash error={sp.error} ok={sp.ok} />
 
       {canCreate ? (
         <details className="card">

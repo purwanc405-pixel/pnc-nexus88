@@ -7,13 +7,18 @@ import {
   createGovAction,
   setMitraStatusAction,
 } from "@/lib/actions";
-import { PageHeader, StatusBadge } from "@/components/ui";
+import { FormFlash, PageHeader, StatusBadge } from "@/components/ui";
 import { SubmitButton } from "@/components/form-button";
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; ok?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   if (user.role !== "admin") redirect("/ringkasan");
+  const sp = await searchParams;
 
   const [mitraTotal, mitraVerif, peluangBuka, aplikasi, listingAktif, pending] =
     await Promise.all([
@@ -45,6 +50,8 @@ export default async function AdminPage() {
           </div>
         }
       />
+
+      <FormFlash error={sp.error} ok={sp.ok} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {[

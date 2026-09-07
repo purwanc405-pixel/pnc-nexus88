@@ -2,18 +2,21 @@ import { redirect, notFound } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyKerjaAction } from "@/lib/actions";
-import { PageHeader, StatusBadge, Alert } from "@/components/ui";
+import { PageHeader, StatusBadge, Alert, FormFlash } from "@/components/ui";
 import { KerjaDisclaimer } from "@/components/disclaimers";
 import { SubmitButton } from "@/components/form-button";
 
 export default async function KerjaDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   const { id } = await params;
+  const sp = await searchParams;
   const peluang = await prisma.peluangKerja.findUnique({
     where: { id },
     include: {
@@ -41,6 +44,7 @@ export default async function KerjaDetailPage({
         actions={<StatusBadge status={peluang.status} />}
       />
       <KerjaDisclaimer />
+      <FormFlash error={sp.error} ok={sp.ok} />
       <div className="card whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
         {peluang.deskripsi}
       </div>

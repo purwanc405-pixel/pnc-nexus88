@@ -1,14 +1,19 @@
 import { onboardingAction } from "@/lib/actions";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/components/ui";
+import { FormFlash, PageHeader } from "@/components/ui";
 import { SubmitButton } from "@/components/form-button";
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/masuk");
   if (user.role !== "mitra") redirect("/ringkasan");
   if (user.onboardingDone) redirect("/ringkasan");
+  const sp = await searchParams;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -16,6 +21,7 @@ export default async function OnboardingPage() {
         title="Onboarding mitra"
         subtitle="Lengkapi tipe, profil, dan pilih minimal satu jalur minat."
       />
+      <FormFlash error={sp.error} />
       <form action={onboardingAction} className="card space-y-4" encType="multipart/form-data">
         <fieldset className="space-y-2">
           <legend className="label">Tipe mitra</legend>
