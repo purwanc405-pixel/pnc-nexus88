@@ -4,7 +4,7 @@
 
 Portal mitra independen (kontraktor / UMKM / pelaku usaha) dengan tiga jalur tipis: **kerja · komoditi · pemerintahan**.
 
-UI Bahasa Indonesia. Stack: Next.js App Router + TypeScript + Tailwind + Prisma + SQLite + session cookie (JWT).
+UI Bahasa Indonesia. Stack: Next.js App Router + TypeScript + Tailwind + Prisma + PostgreSQL (Neon/Docker) + session cookie (JWT).
 
 Produk authority: folder `docs/` (mirror dari paket produk).
 
@@ -16,7 +16,7 @@ npm install
 
 # 2) Env
 cp .env.example .env
-# DATABASE_URL="file:./dev.db" dan AUTH_SECRET terisi
+# DATABASE_URL postgresql://... (Neon atau Docker) + AUTH_SECRET
 
 # 3) Database + seed demo
 npm run db:setup
@@ -29,7 +29,7 @@ npm run dev
 npm run build && npm start
 ```
 
-Database SQLite: `prisma/dev.db`.
+Database: PostgreSQL. Lihat docs/DEPLOY.md untuk Vercel + Neon free.
 
 ## Akun demo
 
@@ -53,6 +53,10 @@ Password semua akun seed: **`NexusDemo2026!`**
 - **Komoditi:** penawaran mitra; harga indikatif (bukan HET/HPP).
 - **Pemerintahan:** banner disclaimer penuh di setiap view; hanya "Minta dampingan (internal)" + checkbox; deep-link INAPROC opsional. Bukan LPSE/SPSE.
 - Out of scope MVP: payment, chat realtime, API LPSE.
+
+## Deploy (Vercel + Neon free)
+
+See docs/DEPLOY.md: Neon free DB, set Vercel env DATABASE_URL + AUTH_SECRET + COOKIE_SECURE=1, run prisma db push (or migrate deploy) + optional seed, then redeploy.
 
 ## Scripts
 

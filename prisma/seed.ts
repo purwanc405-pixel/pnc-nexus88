@@ -1,3 +1,4 @@
+// Seed for PostgreSQL (Neon / Docker). Re-run clears then inserts demo rows.
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
