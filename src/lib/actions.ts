@@ -11,6 +11,15 @@ import {
   verifyPassword,
 } from "./auth";
 import { notifyOperator } from "./notify";
+import {
+  markAllRead,
+  markRead,
+  onAplikasiBaru,
+  onAplikasiStatusChanged,
+  onListingBaru,
+  onMitraRegistered,
+  onMitraStatusChanged,
+} from "./notifications";
 
 /** Soft validation failure: redirect with searchParams error (no thrown Error UX). */
 function failTo(path: string, msg: string): never {
@@ -97,6 +106,9 @@ export async function onboardingAction(formData: FormData) {
     dokumenPath = safe;
   }
 
+  const wasOnboarded = (
+    await prisma.mitraProfile.findUnique({ where: { userId: user.id } })
+  )?.onboardingDone;
   await prisma.mitraProfile.upsert({
     where: { userId: user.id },
     create: {
@@ -139,6 +151,7 @@ export async function onboardingAction(formData: FormData) {
       updatedById: user.id,
     },
   });
+  if (!wasOnboarded) await onMitraRegistered(prisma, { userId: user.id, nama, kota });
 
   redirect("/ringkasan");
 }
@@ -201,6 +214,8 @@ export async function setMitraStatusAction(formData: FormData) {
     return failTo(back, "Isi alasan penolakan (catatan reject) sebelum menolak.");
   }
 
+  const before = await prisma.mitraProfile.findUnique({ where: { id: profileId } });
+  if (!before) return failTo(back, "Profil tidak ditemukan.");
   await prisma.mitraProfile.update({
     where: { id: profileId },
     data: {
@@ -211,6 +226,8 @@ export async function setMitraStatusAction(formData: FormData) {
       cekJalurSesuai,
     },
   });
+  if (before.status !== status)
+    await onMitraStatusChanged(prisma, { userId: before.userId, status, catatan: catatanStatus });
   revalidatePath("/mitra");
   revalidatePath("/admin");
   revalidatePath("/ringkasan");
@@ -232,10 +249,22 @@ export async function updateAplikasiStatusAction(formData: FormData) {
   const allowed = ["diajukan", "ditinjau", "diterima", "ditolak"];
   if (!aplikasiId || !allowed.includes(status))
     return failTo(back, "Status aplikasi tidak valid.");
+  const prev = await prisma.aplikasi.findUnique({
+    where: { id: aplikasiId },
+    include: { peluang: true },
+  });
+  if (!prev) return failTo(back, "Aplikasi tidak ditemukan.");
   await prisma.aplikasi.update({
     where: { id: aplikasiId },
     data: { status },
   });
+  if (prev.status !== status)
+    await onAplikasiStatusChanged(prisma, {
+      applicantId: prev.userId,
+      peluangId: prev.peluangId,
+      peluangJudul: prev.peluang.judul,
+      status,
+    });
   revalidatePath(back);
   revalidatePath("/kerja");
   revalidatePath("/admin");
@@ -295,6 +324,12 @@ export async function applyKerjaAction(formData: FormData) {
     refId: aplikasiId,
     actorUserId: user.id,
   });
+  await onAplikasiBaru(prisma, {
+    applicantId: user.id,
+    applicantName: user.name,
+    peluangId,
+    peluangJudul: peluang.judul,
+  });
   revalidatePath(`/kerja/${peluangId}`);
   revalidatePath("/kerja");
   revalidatePath("/ringkasan");
@@ -335,6 +370,12 @@ export async function createListingAction(formData: FormData) {
       catatan,
       status: status === "aktif" ? "aktif" : "draft",
     },
+  });
+  await onListingBaru(prisma, {
+    ownerId: user.id,
+    ownerName: user.name,
+    nama,
+    status: status === "aktif" ? "aktif" : "draft",
   });
   revalidatePath("/komoditi");
   redirect("/komoditi?ok=" + encodeURIComponent("Listing disimpan."));
@@ -493,4 +534,23 @@ export async function createGovAction(formData: FormData) {
   revalidatePath("/pemerintahan");
   revalidatePath("/admin");
   redirect("/admin?ok=" + encodeURIComponent("Item pemerintahan dibuat."));
+}
+
+export async function markNotificationReadAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user) return failTo("/masuk", "Login dulu.");
+  const id = String(formData.get("id") || "");
+  const go = String(formData.get("go") || "");
+  if (id) await markRead(prisma, user.id, id);
+  revalidatePath("/notifikasi", "layout");
+  if (go.startsWith("/") && !go.startsWith("//")) redirect(go);
+  return ok();
+}
+
+export async function markAllNotificationsReadAction() {
+  const user = await getSessionUser();
+  if (!user) return failTo("/masuk", "Login dulu.");
+  await markAllRead(prisma, user.id);
+  revalidatePath("/notifikasi", "layout");
+  redirect("/notifikasi?ok=" + encodeURIComponent("Semua notifikasi ditandai sudah dibaca."));
 }

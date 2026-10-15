@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 const DEMO = "NexusDemo2026!";
 
 async function main() {
+  await prisma.notification.deleteMany();
   await prisma.operatorNotice.deleteMany();
   await prisma.dampingan.deleteMany();
   await prisma.minatKomoditi.deleteMany();
@@ -269,6 +270,24 @@ async function main() {
         catatan: "Diluar cakupan jalur",
         updatedById: ops.id,
       },
+    ],
+  });
+
+  // Demo notifikasi in-app (lonceng tidak kosong di staging)
+  const n = (userId: string, type: string, title: string, body: string, link: string, readAt: Date | null = null) =>
+    ({ userId, type, title, body, link, readAt });
+  await prisma.notification.createMany({
+    data: [
+      n(admin.id, "mitra_daftar", "Mitra baru menunggu verifikasi: Budi Santoso", "Budi (demo) menyelesaikan onboarding dan menunggu verifikasi.", "/mitra"),
+      n(admin.id, "aplikasi_baru", "Minat kerja baru dari mitra demo", "Rina (demo) mengirim minat untuk peluang kerja.", "/kerja"),
+      n(admin.id, "listing_baru", "Listing komoditi baru dari mitra demo", "Agus (demo) membuat listing komoditi.", "/komoditi", new Date()),
+      n(ops.id, "mitra_daftar", "Mitra baru menunggu verifikasi: Budi Santoso", "Budi (demo) menunggu verifikasi.", "/mitra"),
+      n(ops.id, "aplikasi_baru", "Minat kerja baru dari mitra demo", "Rina (demo) mengirim minat untuk peluang kerja.", "/kerja"),
+      n(budi.id, "mitra_status", "Profil Anda sedang diverifikasi", "Tim kami sedang meninjau profil Anda. Pendaftaran mitra gratis, tanpa biaya.", "/profil"),
+      n(budi.id, "mitra_status", "Selamat datang di PNC Nexus", "Lengkapi profil agar proses verifikasi lebih cepat.", "/profil"),
+      n(rina.id, "aplikasi_status", "Status minat kerja: sedang ditinjau", "Minat Anda sedang ditinjau oleh tim operator.", "/kerja"),
+      n(rina.id, "mitra_status", "Status mitra: terverifikasi", "Profil mitra Anda telah terverifikasi.", "/profil"),
+      n(agus.id, "mitra_status", "Status mitra: terverifikasi", "Anda dapat membuat listing komoditi.", "/komoditi"),
     ],
   });
 
