@@ -1,6 +1,6 @@
--- Notifikasi P0 — migrasi ADITIF (tabel baru saja; tidak ada drop/rename).
+-- Notifikasi P0 — migrasi ADITIF (tabel baru saja; tidak ada drop/rename). Idempoten: aman diulang.
 -- CreateTable
-CREATE TABLE "Notification" (
+CREATE TABLE IF NOT EXISTS "Notification" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -14,13 +14,17 @@ CREATE TABLE "Notification" (
 );
 
 -- CreateIndex
-CREATE INDEX "Notification_userId_readAt_idx" ON "Notification"("userId", "readAt");
+CREATE INDEX IF NOT EXISTS "Notification_userId_readAt_idx" ON "Notification"("userId", "readAt");
 
 -- CreateIndex
-CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
 
 -- AddForeignKey
-ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Notification_userId_fkey') THEN
+    ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- Demo notifikasi HANYA untuk akun demo (jika ada). Tidak menyentuh data lain.
 INSERT INTO "Notification" ("id","userId","type","title","body","link","readAt","createdAt")
