@@ -36,6 +36,7 @@ const protectedPrefixes = [
   "/mitra",
   "/pipeline",
   "/admin",
+  "/notifikasi",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -113,5 +114,7 @@ export const config = {
     "/pipeline/:path*",
     "/admin",
     "/admin/:path*",
+    "/notifikasi",
+    "/notifikasi/:path*",
   ],
 };
